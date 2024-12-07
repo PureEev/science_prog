@@ -5,65 +5,43 @@
 #include <functional>
 #include <string>
 #include <tuple>
+#include <any>
+#include <vector>
 
 class Wrapper {
 public:
     using ArgsMap = std::unordered_map<std::string, std::string>;
 
-    Wrapper() = default;
+    template <typename Ret, typename InstanceType, typename... Args>
+    Wrapper(InstanceType* instance, Ret(InstanceType::* method)(Args...), const ArgsMap& defaultArgs)
+        : args(defaultArgs) {
+        callable = [instance, method](const std::vector<std::any>& args) -> std::any {
+            if (args.size() != sizeof...(Args)) {
+                throw std::invalid_argument("Invalid number of arguments.");
+            }
 
-    template <typename InstanceType, typename MethodType>
-    Wrapper(InstanceType* instance, MethodType method, const ArgsMap& defaultArgs)
-        : invoker_([=](ArgsMap& args) -> void {
-        ArgsMap mergedArgs = defaultArgs;
-        for (const auto& [key, value] : args) {
-            mergedArgs[key] = value;
-        }
-        call_method(instance, method, mergedArgs);
-            }) {}
+            auto tuple_args = [&]<std::size_t... I>(std::index_sequence<I...>) {
+                return std::make_tuple(std::any_cast<std::remove_reference_t<Args>>(args[I])...);
+            }(std::index_sequence_for<Args...>{});
 
-    void execute(ArgsMap& args) const {
-        if (!invoker_) {
-            throw std::runtime_error("Method invoker not initialized");
-        }
-        invoker_(args);
+            if constexpr (std::is_void_v<Ret>) {
+                std::apply([&](auto&&... unpacked_args) {
+                    (instance->*method)(std::forward<decltype(unpacked_args)>(unpacked_args)...);
+                    }, tuple_args);
+                return std::any(); 
+            }
+            else {
+                return std::apply([&](auto&&... unpacked_args) {
+                    return (instance->*method)(std::forward<decltype(unpacked_args)>(unpacked_args)...);
+                    }, tuple_args);
+            }
+            };
     }
+
+    void execute(ArgsMap& inputArgs) const;
 
 private:
-    using Invoker = std::function<void(ArgsMap&)>;
-    Invoker invoker_;
 
-    template <typename T, typename... Args>
-    void vector_to_tuple(const std::vector<T>& vec, std::tuple<Args...>& t) {
-        if constexpr (sizeof...(Args) > 0) {
-            std::get<sizeof...(Args) - sizeof...(Args) - 1>(t) = vec[sizeof...(Args) - sizeof...(Args) - 1];
-        }
-    }
-
-    template <typename... Args>
-    void call_function(std::function<void(Args...)> func, std::vector<std::string> args) {
-
-        auto tuple_args = std::make_tuple(args[0], args[1]);
-
-        std::apply(func, tuple_args);
-    }
-
-    template <typename InstanceType, typename MethodType>
-    static void call_method(InstanceType* instance, MethodType method, ArgsMap& args) {
-        std::vector<std::string> Args;
-        for (const auto& pair : args) {
-            Args.push_back(pair.second);
-        }
-
-
-        call_function(instance->*method, Args);
-
-    }
+    std::function<std::any(const std::vector<std::any>&)> callable; 
+    ArgsMap args;
 };
-
-
-
-
-
-
-

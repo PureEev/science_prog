@@ -13,19 +13,18 @@ int main() {
 
    Engine engine;
 
-   // Регистрируем команды
-   engine.register_command(&replace_word_wrapper, "replace_word");
-   engine.register_command(&find_phrases_wrapper, "find_phrases");
-   engine.register_command(&uppercase_words_wrapper, "uppercase_words");
-   engine.register_command(&uppercase_sentences_wrapper, "uppercase_sentences");
-   engine.register_command(&enumerate_wrapper, "enumerate_sentences");
+   engine.register_command(replace_word_wrapper, "replace_word");
+   engine.register_command(find_phrases_wrapper, "find_phrases");
+   engine.register_command(uppercase_words_wrapper, "uppercase_words");
+   engine.register_command(uppercase_sentences_wrapper, "uppercase_sentences");
+   engine.register_command(enumerate_wrapper, "enumerate_sentences");
 
 
    engine.execute("replace_word", { {"old_word", "text"}, {"new_word", "document"} });
-   //engine.execute("find_phrases", {});
-   //engine.execute("uppercase_words", {});
-   //engine.execute("uppercase_sentences", {});
-   //engine.execute("enumerate_sentences", {});
+   engine.execute("find_phrases", { {"phrase", "document will be used"} });
+   engine.execute("uppercase_words", {});
+   engine.execute("uppercase_sentences", {});
+   engine.execute("enumerate_sentences", {});
 
     
 

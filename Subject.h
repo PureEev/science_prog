@@ -22,7 +22,7 @@ public:
 
 	void replace_word( std::string& old_word,  std::string& new_word);
 
-	std::string find_phrases();
+	void find_phrases(const std::string& phrase);
 
 	void change_first_letters_to_uppercase();
 

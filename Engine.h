@@ -1,24 +1,20 @@
-#include <string>
 #include <unordered_map>
-#include <map>
 #include <stdexcept>
+#include <memory> 
 #include "Wrapper.h"
+
+using ArgsMap = std::unordered_map<std::string, std::string>;
 
 class Engine {
 private:
-    std::map<std::string, const Wrapper*> commands;
+
+    std::unordered_map<std::string, std::unique_ptr<Wrapper>> commands;
 
 public:
-    void register_command(const Wrapper* wrapper, const std::string& command_name) {
-        commands[command_name] = wrapper;
+
+    void register_command(Wrapper wrapper, const std::string& name) {
+        commands[name] = std::make_unique<Wrapper>(std::move(wrapper));
     }
 
-    void execute(const std::string& name, Wrapper::ArgsMap args) const {
-        auto it = commands.find(name);
-        if (it == commands.end()) {
-            throw std::invalid_argument("Command not found: " + name);
-        }
-        it->second->execute(args);
-    }
-
+    void execute(const std::string& name, ArgsMap args);
 };

@@ -36,32 +36,26 @@ void Subject::replace_word( std::string& old_word,  std::string& new_word) {
     close_file();
 }
 
-std::string Subject::find_phrases() {
+void Subject::find_phrases(const std::string& phrase) {
     open_file();
 
     std::string line;
-    std::cout << "Phrases containing two or more words:\n";
-    while (std::getline(file_stream, line)) {
-        std::istringstream iss(line);
-        std::string word, phrase;
-        int word_count = 0;
+    int lineNumber = 0;
+    bool found = false;
 
-        while (iss >> word) {
-            if (!phrase.empty()) phrase += ' ';
-            phrase += word;
-            word_count++;
+    while (std::getline(file_stream, line)) { 
+        lineNumber++;
+        size_t position = line.find(phrase); 
 
-            if (iss.peek() == '.' || iss.peek() == ',' || iss.peek() == '\n') {
-                if (word_count >= 2) {
-                    std::cout << phrase << '\n';
-                }
-                phrase.clear();
-                word_count = 0;
-            }
+        if (position != std::string::npos) { 
+            std::cout << "Phrase found on line " << lineNumber << std::endl;
+            found = true;
         }
     }
 
-    return " ";
+    if (!found) {
+        std::cout << "Phrase not found." << std::endl;
+    }
 
     close_file();
 }
@@ -112,23 +106,31 @@ void Subject::change_first_letter_in_sentence_to_uppercase() {
 void Subject::add_enumerate_to_sentence() {
     open_file();
 
-    std::string content, line;
+    std::string content, line, current_line;
     int sentence_number = 1;
-    bool new_sentence = true;
+    bool new_sentence = false;
+
 
     while (std::getline(file_stream, line)) {
         for (size_t i = 0; i < line.size(); ++i) {
             if (new_sentence) {
+                size_t first_not_space = current_line.find_first_not_of(' ');
+
+                if (first_not_space != std::string::npos) {
+                    current_line.erase(0, first_not_space);
+                }
                 content += std::to_string(sentence_number++) + ". ";
-                new_sentence = false;
-            }
-            content += line[i];
-            if (line[i] == '.' || line[i] == '?' || line[i] == '!') {
+                content += current_line;
                 content += '\n';
+                new_sentence = false;
+                current_line.clear();
+            }
+
+            current_line += line[i];
+            if (line[i] == '.' || line[i] == '?' || line[i] == '!') {
                 new_sentence = true;
             }
         }
-        content += '\n';
     }
 
     file_stream.close();
